@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+# scrapeFred.py - Extract data from Fred website.
+#Fred API Input Source - https://fred.stlouisfed.org/docs/api/fred/series_observations.html
+#3rd Party Sources - https://www.youtube.com/watch?v=M_jswxN3iwI  /   https://github.com/AdamGetbags/fredAPI/blob/main/fred_api.py
+
+from fredapi import Fred
+import requests
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+fred = Fred(api_key='ddc953a5aaefc85d25e21d2bd6dcb38c')
+
+#Assign endpoint location
+base_url = 'https://api.stlouisfed.org/fred/'
+endpoint = 'series/observations'
+series_id = 'CPIAUCSL' #this is for CPI in U.S city average
+
+#Assign dataset parameters:
+start_date = '2000-01-01' #Format YYYY-MM-DD, no spaces.
+end_date = '2023-01-01' #Format YYYY-MM-DD, no spaces.
+frequency = 'q' #q = quarters,
+units = 'pc1' # pc1 = Precent Change, annualized rate.
+
+#Assign endpoint parameters:
+params={
+    'series_id': series_id,
+    'api_key': fred.api_key,
+    'file_type': 'json',
+    'observation_start': start_date,
+    'observation_end': end_date,
+    'frequency': frequency,
+    'units': units
+}
+
+#Make request to Fred API
+websiteResponse = requests.get(base_url + endpoint, params=params)
+websiteResponse.raise_for_status()
+#print(websiteResponse)
+
+#Parse and Format Data
+if websiteResponse.status_code == 200:
+    response_data = websiteResponse.json()
+    observation_data = pd.DataFrame(response_data['observations'])
+    observation_data['date'] = pd.to_datetime(observation_data['date'])
+    observation_data.set_index('date', inplace=True)
+    observation_data['value'] = observation_data['value'].astype(float)
+
+else:
+    print('Failed to retrieve data. Status code:', websiteResponse.status_code)
+
+
+#Print & Plot Data
+print(observation_data)
+observation_data.plot(kind='line', figsize=(10, 6), title='CPI - U.S Average') #change to match dataset.
+plt.ylabel('Percent Change (Annualized)') #change to match dataset.
+plt.xlabel('Date')
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+
