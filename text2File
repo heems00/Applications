@@ -1,7 +1,6 @@
 #! python3
 #file2Excel.py
-# A program that can read the contents of several text files, and insert those contents into a spreadsheet.
-#Specifics - one line of text per row, the lines of the first text file will be in Column A, the 2nd in Column B and so on.
+# A program that can read the contents of an excel file and convert the data in each column as a seperate .txt file.
 
 import sys, openpyxl
 import os
