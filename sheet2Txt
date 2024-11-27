@@ -1,0 +1,44 @@
+##! python3
+#excel2Text.py
+# A program that can open a spreadsheet and write the cells of Column A into 1 text file, the cells of Column B into a 2nd text file and so on.
+
+import os
+import openpyxl
+import pandas as pd
+
+#Determine what excel file you would like converted, and ensure the names are changed accordingly:
+path = 'C:\\Users\\tyson\\mu_code'
+print('Enter the file names you wish to have inserted into the spreadsheet (i.e., filename.xlsx):')
+fileName = input()
+print('Enter the worksheet you would like the program to convert (i.e., Sheet):')
+workSheet = input()
+
+#Function - Convert Excel Columns As A Single Txt File:
+def convert_column_to_text(filename, worksheet_name, column_index, output_filename):
+    wbook = openpyxl.load_workbook(filename)
+    wsheet = wbook[worksheet_name]
+    
+    cell_header = wsheet.cell(row=1, column=column_index)
+    value_header = cell_header.value
+    
+    with open(output_filename, 'w') as f:
+        for row in wsheet.iter_rows(min_row=2, min_col=column_index, max_col=column_index):
+            cell = row[0]
+            if cell.value is not None:
+                f.write(str(cell.value) + '\n')
+            else:
+                f.write('\n')
+
+#Load the workbook and worksheet
+wb = openpyxl.load_workbook(fileName)
+ws = wb[workSheet]
+
+#Adjust to specify what columns you would like converted to independant txt files
+column_indices = [1, 2, 3]
+
+#Format and create txt files:
+for index in column_indices:
+    cell_header = ws.cell(row=1, column=index)
+    value_header = cell_header.value
+    output_filename = f'{value_header}'
+    convert_column_to_text(fileName, workSheet, index, output_filename)
