@@ -1,0 +1,51 @@
+#! python3
+#file2Excel.py
+# A program that can read the contents of several text files, and insert those contents into a spreadsheet.
+#Specifics - one line of text per row, the lines of the first text file will be in Column A, the 2nd in Column B and so on.
+#Documents - dummy files called Topicus.txt, Google.txt, Electrovaya.txt.
+
+import sys, openpyxl
+import os
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
+
+#Determine what files you wished imported:
+print('Enter the absolute path to the folder where the files are located:')
+path = input()
+print('Enter the file names you wish to have inserted into the spreadsheet (seperate each file with a space):')
+files = input()
+documents = files.split()
+
+#Create new excel workbook.
+wb = openpyxl.Workbook()
+ws = wb.active
+
+#Read content from documents and write lines to spreadsheet:
+col = 1
+for file in documents:
+    lines = open(path + '/' + file).readlines()
+    
+    boldFont = Font(bold=True)
+    ws.cell(row=1, column=col).value = file
+    ws.cell(row=1, column=col).font = boldFont
+    
+    longest = 0
+    row = 2
+    for line in lines:
+        line = line.strip()
+        
+        if len(line) > longest:
+            longest = len(line)
+            
+        #Write lines to spreadsheet.
+        ws.cell(row=row, column=col).value = line
+        row += 1
+    
+    #Format columns and write each new file in the following column
+    column_letter = get_column_letter(col)
+    ws.column_dimensions[column_letter].width = longest
+    col += 1
+
+#Save new worksheet
+wb.save(path + '\\text2spreadsheet.xlsx')
+print('Spreadsheet saved as text2spreadsheet.xlsx - can be found in the same directory as the inputted files')
