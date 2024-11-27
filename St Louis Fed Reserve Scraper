@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-fred = Fred(api_key='ddc953a5aaefc85d25e21d2bd6dcb38c')
+fred = Fred(api_key='insert API key here')
 
 #Assign endpoint location
 base_url = 'https://api.stlouisfed.org/fred/'
