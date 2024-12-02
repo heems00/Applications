@@ -1,0 +1,52 @@
+#! python3
+# pdfDecryption.py - Decrypt all specified PDF's using a password on the command line.
+#Specifics - save each decrypted PDF with an _decrypted.pdf extension.
+
+import os
+import PyPDF2
+import re
+import sys
+import pprint
+
+#Enter password to encrypt all PDF's stored in the CWD
+print('Please enter a password to decrypt all PDF in the CWD:')
+password = input()
+#password = sys.argv[1]
+
+pdfList = []
+#Designate location of PDF files.
+os.chdir(r'C:\Users\tyson\mu_code')
+path = os.getcwd()
+
+for folder, subfolders, files in os.walk(path):
+    for file in files:
+        if file.endswith('encrypted.pdf'):
+            try:
+                pdfObj = open(os.path.join(folder, file), 'rb')
+                pdfReadObj = PyPDF2.PdfFileReader(pdfObj)
+                pdfReadObj.pages[0]
+            except PyPDF2.utils.PdfReadError:
+                try:
+                    pdfObj = open(os.path.join(folder, file), 'rb')
+                    pdfReadObj = PyPDF2.PdfFileReader(pdfObj)
+                    pdfReadObj.decrypt(password)
+                    pdfReadObj.pages[0]
+                    print('Decrypting %s....' % file)
+                    pdfWriteObj = PyPDF2.PdfFileWriter()
+                    
+                    for pageNum in range(0, len(pdfReadObj.pages)):
+                        pageObj = pdfReadObj.pages[pageNum]
+                        pdfWriteObj.addPage(pageObj)
+                    
+                    newFilename = re.sub('_encrypted', '_decrypted', file)
+                    outputPDF = open(os.path.join(folder, newFilename), 'wb')
+                    pdfWriteObj.write(outputPDF)
+                    pdfObj.close()
+                    outputPDF.close()
+                    pdfList.append(file)
+                except PyPDF2.utils.PdfReadError:
+                    print('Could not decrypt %s' % file)
+
+print('Successfully decrypted the following:')
+pprint.pprint(pdfList)
+
