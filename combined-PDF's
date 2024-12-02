@@ -1,0 +1,32 @@
+#! python3
+# combinedPdf.py - Combines all PDF's in the CWD into a single PDF.
+
+import PyPDF2, os
+
+#Step 1 - Find all PDF filenames in CWD
+#Find .pdf files in CWD and store in list pdfFiles:
+pdfFiles = []
+for filename in os.listdir('.'):
+    if filename.startswith('TOI') and filename.endswith('.pdf'): #Adjust terms according to the file(s) you wished combined.
+        pdfFiles.append(filename)
+
+#Sort files alphabetically stored in pdfFiles list:
+pdfFiles.sort(key = str.lower)
+
+#Create PdfWriter object for output PDF:
+pdfWriterObj = PyPDF2.PdfWriter()
+
+#Step 2 - Open and Read Each PDF File in pdfFiles:
+for filename in pdfFiles:
+    pdfFileObj = open(filename, 'rb')
+    pdfReadObj = PyPDF2.PdfReader(pdfFileObj)
+    
+    #Step 3 - Loop through all pages in each file, except the first page, and add them to an output file:
+    for pageNum in range(0, len(pdfReadObj.pages)): #Adjust range to omit certain pages.  I.e., 1,len will omit the first page of subsequent files.
+        pageObj = pdfReadObj.pages[pageNum]
+        pdfWriterObj.add_page(pageObj)
+
+#Step 4 - Save results to output PDF File:
+pdfOutputFile = open('TOI_Earnings.pdf', 'wb') #Adjust name of file to appropiately describe output file
+pdfWriterObj.write(pdfOutputFile)
+pdfOutputFile.close()
