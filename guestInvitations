@@ -1,0 +1,26 @@
+#! python3
+#guestInvitations.py - A program that can import a txt file with a list of names and then
+#generate a Word docx with a specific invitation style format.
+
+#TODO - Customize program for output formatting and flexibile inputs.
+
+import docx
+
+#Create new Word Doc for invitations:
+doc = docx.Document()
+
+#Import names from guest list:
+guests = open('guestlist.txt')
+guests = guests.read()
+guests = guests.split(sep='\n')
+
+for name in guests:
+    doc.add_paragraph(name).style = 'Title'
+    doc.add_paragraph('You have been invited to attend the 2024 Social').style = 'Normal'
+    doc.add_paragraph('This event will be held at xyz').style = 'Normal'
+    doc.add_paragraph('This event will occur on December 25, 2024').style = 'Normal'
+    eventDate = doc.add_paragraph('Please come by anytime after 4pm EST')
+    eventDate.runs[0].add_break(docx.enum.text.WD_BREAK.PAGE)
+    eventDate.style = 'Normal'
+
+doc.save('Invitations.docx')
