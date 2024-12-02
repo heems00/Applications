@@ -1,0 +1,55 @@
+#! python3
+# pdfEncryption.py - Encrypt all specified PDF's using a password on the command line.
+#Specifics - save each encrypted PDF with an _encrypted.pdf extension, and delete the original copies.
+
+import os
+import PyPDF2
+import re
+import sys
+
+#Enter password to encrypt all PDF's stored in the CWD
+print('Please enter a password to encrypt all PDF in the CWD:')
+password = input()
+#password = sys.argv[1]
+
+#Designate location of PDF files.
+os.chdir(r'C:\Users\tyson\mu_code')
+path = os.getcwd()
+
+#Loop through PDF's in Designated Path:
+for folder, subfolders, files in os.walk(path):
+    for file in files:
+        if file.endswith('.pdf'):
+            print('Encrypting ' + file + '.....')
+            #Filter through all files in designated path with extension .pdf, and encrypt them with the password
+            pdfFileObj = open(os.path.join(folder, file), 'rb')
+            pdfReadObj = PyPDF2.PdfFileReader(pdfFileObj)
+            pdfWriteObj = PyPDF2.PdfFileWriter()
+            pdfWriteObj.encrypt(password)
+            
+            #Once PDF is opened, copy each page into the pdfWriteObj
+            for pageNum in range(len(pdfReadObj.pages)):
+                pageObj = pdfReadObj.pages[pageNum]
+                pdfWriteObj.addPage(pageObj)
+            
+            #Rename files as per the instructions and save the new encrypted files:
+            file = re.sub('.pdf', '', file)
+            outputPDF = open(os.path.join(folder, file + '_encrypted.pdf'), 'wb')
+            pdfWriteObj.write(outputPDF)
+            pdfFileObj.close()
+            outputPDF.close()
+
+#Once we have created the encrypted PDF copies, we want the program to be delete the original copies:
+for folder, subfolders, files in os.walk(path):
+    for file in files:
+        if file.endswith('encrypted.pdf'):
+            pdfFileObj = open(os.path.join(folder, file), 'rb')
+            pdfReadObj = PyPDF2.PdfFileReader(pdfFileObj)
+            try:
+                pageObj = pdfReadObj.pages[0]
+            except PyPDF2.utils.PdfReadError:
+                file = re.sub('_encrypted.pdf', '', file)
+                print('Deleting %s...' % (os.path.join(folder, file)))
+                os.remove(os.path.join(folder, file + '.pdf'))
+print('Finished')
+            
