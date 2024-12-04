@@ -1,0 +1,32 @@
+#! python3
+# getOpenWeather.py - Gather today's weather from the source.
+#Source - https://openweathermap.org
+
+apiKey = 'enterApiKeyHere'
+
+import sys
+import requests
+import json
+
+# Step 1 - Get Location From Command Line Argument
+#Website API Call - Requires City Name, State Code (Only for US) and ISO 3166 Country Codes
+if len(sys.argv) < 2:
+    print('Usage: getOpenWeather.py city_name, country_name')
+    sys.exit()
+location = ' '.join(sys.argv[1:])
+
+#Step 2 - Download the JSON data from OpenWeatherMap.org's API:
+url = f'https://api.openweathermap.org/data/2.5/weather?q={location}&units=imperial&cnt=3&appid={apiKey}'
+response = requests.get(url)
+response.raise_for_status()
+
+#For API call testing purposes only:
+print(response.text)
+
+#Step 3 - Load JSON data into a Python variable and print results:
+weatherData = json.loads(response.text)
+
+#Step 4 - Print Weather Descriptions
+print(f'Current weather in {location}: ')
+print(weatherData['weather'][0]['main'], '-', weatherData['main']['temp'], '-', weatherData['weather'][0]['description'])
+print()
