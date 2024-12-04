@@ -1,0 +1,51 @@
+#!python3
+# excel2CsvConverter.py - Converts all .xlsx files in the CWD to .csv files
+#Specifics - each .xlsx sheet will be converted to a single .csv file 
+#Specifics - the filenames of the new .csv files should read as: <excel filename>_<sheet title>.csv
+#Note - Large .xlsx files take abnormally long times.
+
+import os
+import openpyxl
+import csv
+import re
+import shutil
+
+#Create new folder to store new .csv files, establish paths for program
+os.makedirs('converted2CSV', exist_ok=True)
+path = os.getcwd()
+new_path = path + '\\' + 'converted2CSV'
+
+#Loop through CWD, open only .xlsx files and store them in a workbook object
+for excelFile in os.listdir('.'):
+    #skip non-xlsx files in the path...
+    if not excelFile.endswith('.xlsx'):
+        continue
+    wb = openpyxl.load_workbook(excelFile)
+    
+    print('Converting ' + excelFile + 'to CSV format...')
+    
+    #Loop through all sheets included.
+    for sheetName in wb.sheetnames:
+        wbName = re.sub('.xlsx', '', excelFile)
+        csvName = wbName + '_' + sheetName + '.csv'
+        
+        #Create CSV file with the filename extracting from the book name and sheet title:
+        csvFileObj = open(csvName, 'w', newline='')
+        #Create the csv.writer object for this CSV file.
+        csvWriteObj = csv.writer(csvFileObj)
+        ws = wb.active
+        
+        #Loop through every row in the sheet
+        for rowNum in range(1, ws.max_row + 1):
+            rowData = []
+            #Loop through each cell in the row
+            for colNum in range(1,ws.max_column + 1):
+                #Append each cell's data to rowData
+                cellObj = ws.cell(row=rowNum, column=colNum).value
+                rowData.append(cellObj)
+            #Write the rowData list to the CSV file
+            csvWriteObj.writerow(rowData)
+        csvFileObj.close()
+        shutil.move(os.path.join(path, csvName), os.path.join(new_path, csvName))
+        
+print('Finished converting all .xlsx files into .csv files')
