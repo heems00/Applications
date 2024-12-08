@@ -1,0 +1,74 @@
+#! python3
+# scheduledDownloader.py - A program that checks the website and automatically download content if an update occured.
+# Specifics - Currently it asks the user for the last time it has been updated.  This was done to test the code.
+# Next Step - Amend the input so the program will check the folder, see what the most recent update is that you have, then update new content if needed.
+# Following Step - Add a timedate scheduler so the program does this once every week.
+
+import requests
+import os
+import bs4
+import datetime
+
+#Ask user for the latest downloaded comic number.
+def get_latest_comic():
+    while True:
+        try:
+            last_comic = int(input("What is the last comic number you have downloaded? "))
+            return last_comic
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+#Checks for updates on the XKCD website.
+def check_content(last_comic):
+    #Args: last_comic: The latest downloaded comic number.
+    #Returns: int: The number of the latest comic on the website.
+    url = f'https://xkcd.com/{last_comic + 1}'
+    try:
+        res = requests.get(url)
+        res.raise_for_status()
+        return True #if there is an update (request is successful)
+    except requests.exceptions.RequestException:
+        return False #if there is no new comic (request is not successful)
+
+#Download the new comic from XKCD:
+def download_comic(comic_number):
+    #Download the page
+    url = f'https://xkcd.com/{comic_number}'
+    res = requests.get(url)
+    res.raise_for_status()
+    
+    soup = bs4.BeautifulSoup(res.text, 'html.parser')
+    
+    comic_elem = soup.select('#comic img')
+    if comic_elem:
+        comic_url = 'https:' + comic_elem[0].get('src')
+        
+        #If new comic is uploaded, create a new directory to store image
+        os.makedirs('newContent', exist_ok=True)
+        
+        #Download the image
+        print('Downloading image %s...' % (comic_url))
+        res = requests.get(comic_url)
+        res.raise_for_status()
+        
+        #Save image in new directory/folder:
+        imageFile = open(os.path.join('newContent', os.path.basename(comic_url)), 'wb')
+        for chunk in res.iter_content(100000):
+            imageFile.write(chunk)
+        imageFile.close()
+
+if __name__ == "__main__":
+    last_comic = get_latest_comic()
+    has_new_comics = check_content(last_comic)
+    
+    if has_new_comics:
+        for comic_number in range(last_comic + 1, last_comic + 100):
+            try:
+                download_comic(comic_number)
+                print(f'Downloaded comic #{comic_number}')
+            except requests.exceptions.RequestException:
+                print(f'Comic #{comic_number} not found.  Downloading stopped.')
+                break
+    else:
+        print('No new comics found')
+    
