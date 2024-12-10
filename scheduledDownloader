@@ -20,8 +20,6 @@ def get_latest_comic():
 
 #Checks for updates on the XKCD website.
 def check_content(last_comic):
-    #Args: last_comic: The latest downloaded comic number.
-    #Returns: int: The number of the latest comic on the website.
     url = f'https://xkcd.com/{last_comic + 1}'
     try:
         res = requests.get(url)
