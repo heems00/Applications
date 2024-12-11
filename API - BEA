@@ -1,0 +1,34 @@
+#! python3
+# scrapeBEA.py - Program to access data from the Bureau of Economic Analysis (BEA)
+# Source - https://apps.bea.gov/api/_pdf/bea_web_service_api_user_guide.pdf
+
+#Modules
+import requests
+import pandas as pd
+
+#Set Parameters
+    #Required
+apiKey = 'XXXXXXXXXXX'
+method = 'GetData'
+dataSetName = 'NIPA' #Check documentation for appropiate dataSet.
+tableName = 'T10101' #Check documentation for appropiate data point.
+frequency = 'A' #A = Annual, M = Monthly, Q = Quarterly
+year = '2015' #desginate year such as '2018', or multiples years '2018, 2019', or 'ALL' years
+    #Optional
+resultFormat = 'JSON' #Or can be 'XML'
+
+#Request Data & Extract as JSON Format
+url = f'https://apps.bea.gov/api/data?&UserID={apiKey}&method={method}&DataSetName={dataSetName}&TableName={tableName}&Frequency={frequency}&Year={year}&ResultsFormat={resultFormat}'
+res = requests.get(url)
+res.raise_for_status()
+
+data = res.json()
+#print(data)
+
+#Convert JSON to DataFrame
+dataFrame = pd.DataFrame(data['BEAAPI']['Results']['Data'])
+
+fileName = f'{dataSetName}_{tableName}_{frequency}_{year}.xlsx'
+dataFrame.to_excel(fileName, index=False)
+
+print(f'Data saved to Excel file: {fileName}')
