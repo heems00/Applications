@@ -1,6 +1,6 @@
 #! python3
 #file2Excel.py
-# A program that can read the contents of an excel file and convert the data in each column as a seperate .txt file.
+# A program that can read the contents of an .txt file and convert the data into an .xslx spreadsheet.
 
 import sys, openpyxl
 import os
