@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+# scrapeEdgar.py - Extract data from EDGAR website.
+# End Goal - A Program that checks the site at the end of everyday, and downloads any new filings released for the identified Company.
+# Source(s) - https://www.sec.gov/search-filings/edgar-application-programming-interfaces / https://www.sec.gov/files/edgar/filer-information/api-overview.pdf
+
+#Website API's
+#Entity's Current Filing History URL API - https://data.sec.gov/submissions/CIK##########.json 
+#Company Concept URL API - https://data.sec.gov/api/xbrl/companyconcept/CIK##########/us-gaap/AccountsPayableCurrent.json
+#Company Facts URL API - https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json
+#Company Frames (latest filing within a select period) URL API - https://data.sec.gov/api/xbrl/frames/us-gaap/AccountsPayableCurrent/USD/CY####Q#.json
+
+#Modules & Preset Values 
+import requests
+import pandas as pd
+
+userAgent = {'User-Agent': 'heemsprogram@gmail.com'}
+
+#Get all companies data, identify what Company you would like data for:
+    #Request Data
+allCompanyTickers = requests.get('https://www.sec.gov/files/company_tickers.json', headers=userAgent)
+allCompanyTickers.raise_for_status()
+
+#Format Response to Dictionary, Designate Company In Which You Want Data
+allCompanies = allCompanyTickers.json()
+#companyTicker = "GOOG" #Replace with desired Ticker.
+
+#Find the Company's CIK
+firstEntry = allCompanyTickers.json()['0']
+print(firstEntry)
+
+#Parse JSON File, Extract CIK#
+directCIK = allCompanyTickers.json()['0']['cik_str']
+print(directCIK)
+
+#Move Dictionary Into A Dataframe & Format CIK Accordingly
+    #Move into DF
+companyData = pd.DataFrame.from_dict(allCompanyTickers.json(), orient='index')
+    #Add leading 000's to CIK
+companyData['cik_str'] = companyData['cik_str'].astype(str).str.zfill(10)
+
+#Review Data
+print(companyData[:1])
+companyCIK = companyData[0:1].cik_str[0]
+print(companyCIK)
+
+#Requests Company Filings, Convert Dictionary to Dataframe
+filingData = requests.get(f'https://data.sec.gov/submissions/CIK{companyCIK}.json', headers=userAgent)
+filingData.raise_for_status()
+
+allFilings = pd.DataFrame.from_dict(filingData.json()['filings']['recent'])
+allFilings.columns
+allFilings[['accessionNumber', 'reportDate', 'form']].head(50)
+print(allFilings)
+
+#Get MetaData Of Specific Filing (10-K, 10-Q, 8-K, 20-F, 40-F, 6-K)
+filingType = allFilings.iloc[3] #Need to change to identify column [2] with 10-Q/10-K as argument
+print(filingType)
+
+#TODO - Search for new filings since last look, if so, download into folder.
+
+#TODO - Schedule it for at the end of everyday.
