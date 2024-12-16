@@ -1,0 +1,13 @@
+#World Heath Index - U.S Framework
+# Source(s)
+  1. FRED API 
+
+# Project Synopsis
+  #Country Well Being Measurements
+    1. Life Expectancy
+    2. Real GDP Per Capita (Real GDP & Population)
+    3. Government Debt Relative to GDP
+    4. Consumer Debt Relative to GDP
+
+# Project Code Outline
+  #Extract data using source API's
