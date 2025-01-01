@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+# UnemploymentRawData.py - Extract unemployment rate data from world bank website.
+# Source API Documentation - https://promptlytechnologies.com/imfp/ (for international monetary fund website)
+
+#Modules
+import requests
+import pandas as pd
+
+#Set Values & Parameters
+#Indicators Documentation - file:///C:/Users/tyson/Downloads/Introductory%20Notes,%20as%20of%20IFSM%202021%20M07.pdf
+base_url = 'http://dataservices.imf.org/REST/SDMX_JSON.svc/'
+dataset = 'IFS'
+frequency = 'A'
+countries = ['US', 'CA', 'CHN', 'AU']
+series = 'LUR_PT' 
+start_year = '1980'
+end_year = '2023'
+
+series_param = '.'.join([frequency, '+'.join(countries), series])
+key = f"CompactData/{dataset}/{series_param}?startPeriod={start_year}&endPeriod={end_year}"
+
+# Combine API url with key specific to data request
+url = f"{base_url}{key}"
+r = requests.get(url).json()
+data = r['CompactData']['DataSet']['Series']
+
+# Create pandas dataframe, column = country, row = obs
+all_data = {}
+for s in data:
+    country_code = s['@REF_AREA']
+    all_data[country_code] = {}
+    for obs in s['Obs']:
+        year = int(obs['@TIME_PERIOD'])
+        value = float(obs['@OBS_VALUE'])
+        all_data[country_code][year] = value
+
+#Format Dataframe
+df = pd.DataFrame(all_data)
+all_years = range(int(start_year), int(end_year) + 1)
+df = df.reindex(all_years)
+df = df.transpose()
+
+print(df)
