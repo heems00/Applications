@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+# educationalAttainmentRawData.py - Extract life expectancy data from world bank website.
+# Source API Documentation - https://pypi.org/project/wbgapi/
+
+#Modules
+import wbgapi as wb
+import pandas as pd
+
+#Set Values
+educationalAttainment_id = 'SE.SEC.CUAT.UP.ZS'
+countryCodes = ['USA', 'CAN', 'CHN', 'AUS'] #leave '' for all countries.
+timePeriod = '10' #leave blank for all years.  For .fetch function only.
+
+#Extracting Data Functions - 
+    #wb.data.fetch() - This function returns rows as dictionaries.
+    #wb.data.DataFrame() - This function returns rows as a pandas DF.
+    #fetch Arguments - (['ID1', 'ID2'....], 'Country Code, mrv='Number of Years')
+    #DF Arguments - (['ID1', 'ID2'....], 'Country Code, time='Number of Years, skipBlanks=True, columns='time/series/economy').reset_index() which replaces the index with 0-based integers
+
+    #.fetch function:
+#for series in wb.data.fetch(educationalAttainment_id, countryCodes, mrv=timePeriod):
+    #print(series)
+
+    #.DataFrame function:
+educationalAttainmentDF = wb.data.DataFrame(educationalAttainment_id, countryCodes, time=range(1960,2023), skipBlanks=True, columns='time').reset_index()
+educationalAttainmentDF = educationalAttainmentDF.round(2)
+print(educationalAttainmentDF)
