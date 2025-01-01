@@ -1,0 +1,11 @@
+#!python3
+#imfTracker.py - A program that accepts a survey, and uploads the tracker in excel based off the results.
+
+#From a high-level, the underlying program should do the following:
+'''
+1. Sorting through email, finding the survey
+2. Opening and reading the survey
+3. Identifying key values in the survey
+4. Adding values to the tracker in the appropiate spots.
+5. Save the new file.  
+
