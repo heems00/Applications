@@ -2,6 +2,8 @@
 
 # Project Synopsis
 # Folder 1 - WHI Data: This folder contains all programs responsible for extracting data, and saving datasets as DataFrames.
+
+##** TO INCLUDE FOR EACH - Definition of determinant, time period of data currently available, source of data, and importance classified by group. 
   #borrowingRateRawData
   #educationalAttainmentRawData
   #equityMarketCapRawData
