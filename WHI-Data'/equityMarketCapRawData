@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+# equityMarketCapRawData.py - Extract historical market-caps of equities from world bank website.
+# Source API Documentation - https://pypi.org/project/wbgapi/
+
+#Modules
+import wbgapi as wb
+import pandas as pd
+
+#Set Values
+equityMarketCap_id = 'CM.MKT.LCAP.CD'
+countryCodes = ['USA', 'CAN', 'CHN', 'AUS'] #leave '' for all countries.
+timePeriod = '10' #leave blank for all years.  For .fetch function only.
+
+#Extracting Data Functions - 
+    #wb.data.fetch() - This function returns rows as dictionaries.
+    #wb.data.DataFrame() - This function returns rows as a pandas DF.
+    #fetch Arguments - (['ID1', 'ID2'....], 'Country Code, mrv='Number of Years')
+    #DF Arguments - (['ID1', 'ID2'....], 'Country Code, time='Number of Years, skipBlanks=True, columns='time/series/economy').reset_index() which replaces the index with 0-based integers
+
+    #.fetch function:
+#for series in wb.data.fetch(equityMarketCap_id, countryCodes, mrv=timePeriod):
+    #print(series)
+
+    #.DataFrame function:
+equityMarketCapDF = wb.data.DataFrame(equityMarketCap_id, countryCodes, time=range(1960,2023), skipBlanks=True, columns='time').reset_index()
+numericColumns = equityMarketCapDF.select_dtypes(include='number').columns
+equityMarketCapDF[numericColumns] = equityMarketCapDF[numericColumns].div(10**9) #Divide by 1 billion.
+equityMarketCapDF = equityMarketCapDF.round(1)
+print(equityMarketCapDF)
