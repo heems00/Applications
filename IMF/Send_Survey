@@ -1,0 +1,66 @@
+#imfSendSurveys.py - This program sends out the surveys in an automated fashion.
+#MethodsOfDelivery - Text Messages via Twilio, Email via gmail API
+
+##!python3
+#imfSendSurvey.py
+#The program automatically sends out the surveys via text messaging, and email.
+#TextMessagingAPI - Twilio
+#EmailMessagingAPI - Gmail, Forms
+
+#Modules
+from twilio.rest import Client
+import ezgmail
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
+#Set Values
+    #Twilio API
+accountSID =''
+authToken = ''
+twilioNumber = '+'
+recipientNumbers = [''] #Add more phone numbers after they've been verified on Twilio.
+    #Google API
+google_forms_link = ''
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.modify', 'https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/gmail.compose', 'https://www.googleapis.com/auth/gmail.metadata']
+emailRecipients = ['']
+
+
+#Function - Send SMS With Survey Link
+def send_survey_sms(account_sid, auth_token, twilio_number, recipients, message_body):
+    try:
+        client = Client(account_sid, auth_token)
+        for recipient in recipients:
+            message = client.messages.create(body=message_body, from_=twilio_number, to=recipient)
+            print(f"Survey sent to {recipient}: {message.sid}")
+    except Exception as e:
+        print(f"An error occurred while sending SMS: {e}")
+
+#Function - Send Email With Survey Link
+def send_survey_email(recipients, subject, message_body):
+    try:
+        for recipient in recipients:
+            ezgmail.send(recipient, subject, message_body)
+            print(f"Survey email sent to {recipient}")
+    except Exception as e:
+        print(f"An error occured while sending emails: {e}")
+
+#Automated Messages
+if __name__ == '__main__':
+    sms_automated_message = (f"Hello! This is not spam; it is an invitation to participate in the IM Films Survey. "
+        f"We value your contribution! Please click on the link below to complete the survey:\n{google_forms_link}")
+    
+    email_subject = 'IM Films Survey Invititation'
+    email_body = (
+        f"Hello!\n\nThis is an invitation to participate in the IM Films Survey. "
+        f"We value your feedback and would appreciate it if you could take a few minutes to complete our survey.\n\n"
+        f"Please click on the link below to access the survey:\n{google_forms_link}\n\n"
+        f"Thank you for your time and contribution!\n\nBest regards,\nIM Films Team"
+    )
+
+#Program Executing The Above Functions
+send_survey_sms(accountSID, authToken, twilioNumber, recipientNumbers, sms_automated_message)
+send_survey_email(emailRecipients, email_subject, email_body)
