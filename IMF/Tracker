@@ -2,10 +2,230 @@
 #imfTracker.py - A program that accepts a survey, and uploads the tracker in excel based off the results.
 
 #From a high-level, the underlying program should do the following:
+'''This is a preliminary evolving to do list
+1. Sends an automated survey to respondants - NOT FINISHED
+2. Accesses survey responses in Google Forms - PARTIALLY FINISHED.  
+3. Extract survey responses into a structured dictionary - FINISHED
+4. Read structured dictionary, convert 'new' survey responses not already included in the tracker directly into excel - PARTIALLY FINISHED.  It currently extracts all survey responses and converts all of them into the excel sheet.  The error is it will double count scores.
+5. Add formula's and copy formatting to the newly added information - FINISHED.
 '''
-1. Sorting through email, finding the survey
-2. Opening and reading the survey
-3. Identifying key values in the survey
-4. Adding values to the tracker in the appropiate spots.
-5. Save the new file.  
 
+#The Entire Program (In Development):
+#!python3
+#imfTracker.py
+#Google Forms API Authentication - googleFormAPI.py
+#IMF Survey Form ID - 1FAIpQLSfMWZ2QbLw_Xrgd9SpVAu5B90HYkbw0R688c9PdAeTVGj0KAA
+
+#Modules
+import os
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
+import openpyxl
+from openpyxl.styles import Font, Border, PatternFill, Alignment
+
+SCOPES = ['https://www.googleapis.com/auth/forms', 'https://www.googleapis.com/auth/forms.body.readonly', 'https://www.googleapis.com/auth/forms.responses.readonly', 'https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file']
+DISCOVERY_DOC = 'https://forms.googleapis.com/$discovery/rest?version=v1'
+
+## Function - Extract Responses From Submitted Survey Forms
+def get_form_responses(form_id, service):
+    try:
+        results = service.forms().responses().list(formId=form_id).execute()
+        responses = results.get('responses', [])
+        return responses
+    except HttpError as error:
+        print(f"An HTTP error occured: {error}")
+        return None
+    except Exception as e:
+        print(f"An error occured: {e}")
+        return None
+
+#Function - Extract Questions From Submitted Survey Forms
+def get_questions(form_id, service):
+    try:
+        form = service.forms().get(formId=form_id).execute()
+        questions = form.get('items', [])
+        question_titles = {}
+        for item in questions:
+            if 'title' in item:
+                question_id = item.get('questionItem', {}).get('question', {}).get('questionId')
+                if question_id:
+                    question_titles[question_id] = item['title']
+        return question_titles
+    except HttpError as error:
+        print(f"An HTTP error occured while retrieving questions: {error}")
+        return None
+
+#Function - Transfer Survey Results To The IMF Tracker
+def write_response_to_excel(workbook, worksheet_name, ordered_response, starting_row, question_column_mapping):
+    try:
+        worksheet = workbook[worksheet_name]
+        print(f"Writing responses to {worksheet_name} starting at row {starting_row}")
+
+        for question, answer in ordered_response.items():
+            if question in question_column_mapping:
+                column = question_column_mapping[question]
+                print(f"Processing question: {question} at column {column}")
+
+                if isinstance(answer, list):
+                    answers_text = []
+                    for item in answer:
+                        if isinstance(item, dict) and 'textAnswers' in item:
+                            answers_text.extend(item['textAnswers'].get('answers', []))
+                        elif isinstance(item, str):
+                            answers_text.append(item)
+                    answer_string = ', '.join(answers_text)
+                    if column in [3, 8, 9, 10, 11, 12]:
+                        try:
+                            answer_string = int(float(answer_string))
+                        except ValueError:
+                            pass
+                    worksheet.cell(row=starting_row, column=column).value = answer_string
+                    print(f"Wrote '{answer_string}' to row {starting_row}, column {column}")
+                elif isinstance(answer, dict) and 'textAnswers' in answer:
+                    answers_text = answer['textAnswers'].get('answers', [])
+                    if answers_text:
+                        answer_string = ', '.join(answers_text)
+                        if column in [8, 9, 10, 11, 12]:
+                            try:
+                                answer_string = int(float(answer_string))
+                            except ValueError:
+                                pass
+                        worksheet.cell(row=starting_row, column=column).value = answer_string
+                        print(f"Wrote '{answer_string}' to row {starting_row}, column {column}")
+                    else:
+                        worksheet.cell(row=starting_row, column=column).value = 'N/A'
+                elif isinstance(answer, str):
+                    if column in [8, 9, 10, 11, 12]:
+                        try:
+                            answer_string = int(float(answer_string))
+                        except ValueError:
+                            pass
+                    worksheet.cell(row=starting_row, column=column).value = answer
+                elif isinstance(answer, int):
+                    worksheet.cell(row=starting_row, column=column).value = answer
+                else:
+                    worksheet.cell(row=starting_row, column=column).value = str(answer)
+            else:
+                print(f"Warning: Question '{question}' not found in column mapping.")
+        return True
+    except Exception as e:
+        print(f"An unexpected error occured: {e}")
+        return False
+
+#Function - Copy Formula's in Columns A (1) and M (13)
+def copy_formulas(worksheet, start_row, end_row, source_row):
+    try:
+        for row in range(start_row, end_row + 1):
+            prev_row = row
+            formula_col13 = f"=IFERROR(AVERAGE(L{row+1},K{row+1},J{row+1},I{row+1},H{row+1}),\"N/A\")"
+            #formula_col13 = f"=AVERAGE(H{row+1}, I{row+1})"
+            worksheet.cell(row=row + 1, column=1).value = (f"=A{prev_row}+1")
+            print(f"Row {row}: {formula_col13}")
+            #print('Is this formula correct (Y/N)?')
+            #form_confirm = input()
+            #if form_confirm == 'Y':
+            worksheet.cell(row=row + 1, column=13).value = formula_col13
+            #else:
+                #print('Error copying complex formula in Column M')
+                #break
+
+        print(f"Formulas copied from columns A and M for rows {start_row} to {end_row}.")
+    except Exception as e:
+        print(f"An unexpected error occured while copying formulas: {e}")
+
+#Function - Copy Row Formatting For New Information Added
+def copy_row_formatting(worksheet, source_row, start_target_row, end_target_row):
+    try:
+        for target_row in range(start_target_row, end_target_row + 2):
+            for col in range(1, worksheet.max_column + 1):
+                source_cell = worksheet.cell(row=source_row, column=col)
+                target_cell = worksheet.cell(row=target_row, column=col)
+                
+                #Copy Cell Styles
+                target_cell.font = Font(name=source_cell.font.name, size=source_cell.font.size, bold=source_cell.font.bold, italic=source_cell.font.italic, vertAlign=source_cell.font.vertAlign, underline=source_cell.font.underline, strike=source_cell.font.strike, color=source_cell.font.color)
+                target_cell.border = Border(left=source_cell.border.left, right=source_cell.border.right, top=source_cell.border.top, bottom=source_cell.border.bottom)
+                target_cell.fill = PatternFill(fill_type=source_cell.fill.fill_type, start_color=source_cell.fill.start_color.index if source_cell.fill.start_color else None, end_color=source_cell.fill.end_color.index if source_cell.fill.end_color else None)
+                target_cell.alignment = Alignment(horizontal=source_cell.alignment.horizontal, vertical=source_cell.alignment.vertical, wrap_text=source_cell.alignment.wrap_text)
+                target_cell.number_format = source_cell.number_format
+        print(f"Row formatting copied from row {source_row} to rows {start_target_row} through {end_target_row}.")
+    except Exception as e:
+        print(f"An error occured while copying row formatting: {e}")
+
+#Program Executing The Above Functions
+#Functions 1 & 2 - Returns a dictionary {keys = questions: values = responses}
+#Function 3 - Transfers data in dictionary into IM Films.xlsx
+#Functions 4 & 5 - Format Excel File
+def main():
+    form_id = '1umMrYXdb2PUK-K1w84trqyP_vNaTKc0fvRa7i0zJfdA'
+    creds = None
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+           flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+           creds = flow.run_local_server(port=0)
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    service = build('forms', 'v1', credentials=creds)
+    question_titles = get_questions(form_id, service)
+    responses = get_form_responses(form_id, service)
+
+    if responses and question_titles:
+        print(f'Number of responses: {len(responses)}')
+        question_column_mapping = {'What is the title of the movie or TV show (Please include the full name - i.e., Harry Potter The Goblet Of Fire)?': 2, 'How would you score the Fluidity?': 12, 'For full transparency, please type in your desired initials that will appear next to your score (2 letters only - i.e., IM, MF)': 4, 'When was the year in which the movie or TV show was released (i.e., 1999,, 2021, 2006)?': 3, 'How would you score the Plot?': 10, 'How would you score the Cinematography?': 9, 'Would you consider the Movie/TV Show an Independent piece of content or series?': 6, 'How would you score Dialogue?': 8, 'Additional: Were there any notable actors or actresses (please limit to 2 full names if answered)?': 15, 'Would you consider the film a Movie or TV Show': 5, 'How would you score Character Development?': 11, 'Additional: Do you know who the director or writer was?': 7}
+
+    try:
+        workbook = openpyxl.load_workbook('IM Films.xlsx')
+        worksheet = workbook['IM Film Rankings']
+        starting_row = worksheet.max_row + 1
+        successful_writes = 0
+        source_row = max(4, starting_row - successful_writes - 1)
+
+        for response in responses:
+            ordered_response = {}
+            answers = response.get('answers', {})
+            for question_id, answer in answers.items():
+                if question_id in question_titles:
+                    question_text = question_titles[question_id]
+                    if 'textAnswers' in answer and 'answers' in answer['textAnswers']:
+                        ordered_response[question_text] = [item['value'] for item in answer['textAnswers']['answers'] if isinstance(item, dict) and 'value' in item]
+                    else:
+                        ordered_response[question_text] = answer.get('textAnswers', {}).get('answers', [])
+
+            print(f"Processed response: {ordered_response}")
+
+            if write_response_to_excel(workbook, 'IM Film Rankings', ordered_response, starting_row, question_column_mapping):
+                starting_row += 1
+                successful_writes += 1
+            else:
+                print(f"Failed to write response in excel")
+        
+        if successful_writes > 0:
+            first_new_row = starting_row - successful_writes - 1
+            last_new_row = starting_row - 2
+            copy_formulas(worksheet, first_new_row, last_new_row, source_row + 1)
+            copy_row_formatting(worksheet, source_row, first_new_row, last_new_row)
+
+        workbook.save('IM Films.xlsx')
+        print(f"Successfully added {successful_writes} response to the Excel file")
+    except PermissionError:
+        print("Error: Could not save the file, ensure it is not open")
+    except Exception as e:
+        print(f"An error occured while saving the file: {e}")
+    except FileNotFoundError:
+        print('Error: IM Films.xlsx file not found')
+    except KeyError:
+        print('Error: IM Fimls Rankings worksheet not found in the workbook')
+    except Exception as e:
+        print(f"An unexpected error occured: {e}")
+
+if __name__ == '__main__':
+    main()
