@@ -1,0 +1,72 @@
+#!python3
+#sendRatings.py - Send out a summary of the ratings via gmail (eventually, get to post on site).
+#Specific 1 - Automated Message With Rankings.
+#Test out - using AI agent for summaries.
+
+
+#Modules
+import os
+import ezgmail
+import imfFormatData
+from tabulate import tabulate
+
+#Set Values
+imf_contacts = {'Tyson Gibson (Author)': {'phone': '13652755599', 'email': 'gibsontyson@outlook.com'}} #To Add example - ", 'John_doe': 'phone': None, 'email': 'email@gmail.com'}}
+token = 'tokengmail.json'
+
+#Generate Ratings Tables
+top_10_ratings_alltime = imfFormatData.top_10_ratings_alltime
+top10_alltime_table = imfFormatData.tabulate(top_10_ratings_alltime, headers='keys', tablefmt='html', showindex=False)
+#print(top10_alltime_table)
+
+last_top_10_ratings = imfFormatData.last_top_10_ratings
+last_top10_table = imfFormatData.tabulate(last_top_10_ratings, headers='keys', tablefmt='html', showindex=False)
+#print(last_top10_table)
+
+alltime_rankings = imfFormatData.alltime_rankings
+alltime_rankings_table = imfFormatData.tabulate(alltime_rankings, headers='keys', tablefmt='html', showindex=False)
+#print(alltime_rankings_table)
+
+#Function - Check for gmail token to access API
+def check_gmail_token():
+    if not os.path.exists(token):
+        raise FileNotFoundError(f"The gmail token file: {token} is missing.  Please ensure it is in the CWD")
+    print(f"Token file {token} found, proceeding with sending out the email")
+
+#Function - Send Ratings To Contacts Through Gmail
+def send_ratings_email():
+    email_subject = 'IM Films Ratings Summary'
+    message_body = f"""
+    <html>
+        <body>
+            <h2>Hello! This is your IM Films scheduled film ratings summary.</h2>
+            <p>Here are the latest rankings and most recent top 10 ratings:</p>
+            
+            <h3>All-Time Ratings:</h3>
+            {alltime_rankings_table}
+            
+            <h3>Last Top 10 Ratings:</h3>
+            {last_top10_table}
+            
+            <p>Best regards,<br>Your Automated Ratings Bot</p>
+        </body>
+    </html>
+    """
+    
+    for name, contact_info in imf_contacts.items():
+        email = contact_info.get('email')
+        if email:
+            try:
+                print(f"Sending email to {name}, at {email}")
+                ezgmail.send(recipient=email, subject=email_subject, body=message_body, mimeSubtype='html')
+                print(f"Email was successfully sent to {name}")
+            except Exception as e:
+                print(f"No email address found for {name}: {e}")
+
+#Program - Call Functions
+if __name__ == '__main__':
+    try:
+        check_gmail_token()
+        send_ratings_email()
+    except Exception as e:
+        print(e)
