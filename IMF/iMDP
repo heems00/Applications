@@ -1,0 +1,90 @@
+#!python3
+#imfImdp.py - This program scrapes information and ratings from iMDB
+
+#Modules
+from imdb import Cinemagoer
+
+#Set Values
+ia = Cinemagoer()
+
+
+#Function - Get Movie Information
+movie_title = 'The Matrix'
+
+def get_movie_info(title):
+    search_by_name = ia.search_movie(movie_title) #Search By Title
+    #search_by_id = ia.get_movie('0133093') #Search By Movie ID
+    
+    if not search_by_name:
+        return f"No results found for '{title}'"
+    
+    movie = ia.get_movie(search_by_name[0].movieID)
+    
+    #Extract key movie information
+    movie_info = {
+        "Title": movie.get('title', 'N/A'),
+        "Year": movie.get('year', 'N/A'),
+        "Rating": movie.get('rating', 'N/A'),
+        "Director(s)": [director['name'] for director in movie.get('directors', [])],
+        "Cast": [actor['name'] for actor in movie.get('cast', [])[:3]],  # Top 3 actors
+        "Plot": movie.get('plot', ['N/A'])[0]  # First plot summary
+    }
+    
+    #Format output of information as such:
+    info_str = f"Title: {movie_info['Title']}\n"
+    info_str += f"Year: {movie_info['Year']}\n"
+    info_str += f"Rating: {movie_info['Rating']}\n"
+    info_str += f"Director(s): {', '.join(movie_info['Director(s)'])}\n"
+    info_str += f"Cast: {', '.join(movie_info['Cast'])}\n"
+    info_str += f"Plot: {movie_info['Plot']}\n"
+
+    return info_str
+
+#Function - Get Movie Ratings
+#movie_list = ['list of all movies wanting ratings for']
+
+def get_movie_ratings(search_queries, max_results=10):
+    """
+    Search for movies based on a query and return their titles and ratings.
+
+    Args:
+        search_queries (str or list): The search term (e.g., movie title, keyword).
+        max_results (int): The maximum number of movies to return.
+
+    Returns:
+        list: A list of dictionaries containing movie titles and ratings.
+    """
+    if isinstance(search_queries, str):
+        search_queries = [search_queries]
+    
+    movies_list = []
+    for query in search_queries:
+        search_results = ia.search_movie(query)
+        
+        if not search_results:
+            print(f"No results found for {search_query}")
+            continue
+    
+        for result in search_results[:max_results]:
+            movie = ia.get_movie(result.movieID)
+            title = movie.get('title', 'N/A')
+            rating = movie.get('rating', 'N/A')
+            year = movie.get('year', 'N/A')
+            
+            movies_list.append({'Title': title, 'Year': year, 'Rating': rating})
+    return movies_list
+
+#Program - Run The Functions Created
+#Function 1:
+#print(get_movie_info(movie_title))
+
+#Function2:
+search_queries = ['Harry Potter', 'Avengers'] #Enter a search query ('genre, actor, title, director, keyword')
+movies = get_movie_ratings(search_queries)
+
+if not movies:
+    print('No movies found.')
+else:
+    print(f"\nMovies found: ")
+    for movie in movies:
+        print(f"Title: {movie['Title']}, Year: {movie['Year']}, Rating: {movie['Rating']}")
