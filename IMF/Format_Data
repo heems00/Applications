@@ -20,16 +20,17 @@ full_movie_ratings = [] #would list make row easier to convert into table?
 for row in range(4, worksheet.max_row + 1):
     title = worksheet['B' + str(row)].value
     release_date = worksheet['C' + str(row)].value
+    film_type = worksheet['E' + str(row)].value
     imf_rating_avg = worksheet['M' + str(row)].value
     imf_rating_avg_adj = worksheet['N' + str(row)].value
     
     try:
         if imf_rating_avg is not None:
-            imf_rating_avg = round(float(imf_rating_avg), 2)
+            imf_rating_avg = round(float(imf_rating_avg), 1)
         if imf_rating_avg_adj is not None:
-            imf_rating_avg_adj = round(float(imf_rating_avg_adj), 2)
+            imf_rating_avg_adj = round(float(imf_rating_avg_adj), 1)
         if title and release_date and imf_rating_avg and imf_rating_avg_adj is not None:
-            full_movie_ratings.append({'Title Name': title, 'Release Date': release_date, 'IMF Avg. Rating': imf_rating_avg, 'IMF Adj. Rating': imf_rating_avg_adj})
+            full_movie_ratings.append({'Title Name': title, 'Release Date': release_date, 'Film Type': film_type, 'IMF Avg. Rating': imf_rating_avg, 'IMF Adj. Rating': imf_rating_avg_adj})
         else:
             print(f"Skipping row {row}: Missing or invalid data.")
             break
@@ -40,6 +41,9 @@ for row in range(4, worksheet.max_row + 1):
 df = pd.DataFrame(full_movie_ratings)
 
 #Functions - Extract Subset of Movies Based On Conditions, Create Seperate DataFrames
+def get_alltime_rankings(dataframe):
+    return dataframe.sort_values(by='IMF Avg. Rating', ascending=False)
+
 def get_top_10_ratings_alltime(dataframe):
     return dataframe.nlargest(10, 'IMF Avg. Rating')
 
@@ -48,20 +52,25 @@ def get_bottom_10_ratings_alltime(dataframe):
 
 def get_last_top_10_ratings(dataframe):
     last_10_rows = dataframe.tail(10)
-    return last_10_rows.sort_values(by='IMF Avg. Rating', ascending=True)
+    return last_10_rows.sort_values(by='IMF Avg. Rating', ascending=False)
 
+#Additional subset functions
+#def top_10_movie_alltime(dataframe):
+#def top_10_movie_alltime(dataframe):    
 
 top_10_ratings_alltime = get_top_10_ratings_alltime(df)
 bottom_10_ratings_alltime = get_bottom_10_ratings_alltime(df)
 last_top_10_ratings = get_last_top_10_ratings(df)
+alltime_rankings = get_alltime_rankings(df)
 
+print(tabulate(alltime_rankings, headers='keys', tablefmt='fancy_grid', showindex=False))
 
 #Print Tables
-print("Fancy Grid Format:")
-print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex=False))
-print(tabulate(top_10_ratings_alltime, headers='keys', tablefmt='fancy_grid', showindex=False))
-print(tabulate(bottom_10_ratings_alltime, headers='keys', tablefmt='fancy_grid', showindex=False))
-print(tabulate(last_top_10_ratings, headers='keys', tablefmt='fancy_grid', showindex=False))
+#print("Fancy Grid Format:")
+#print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex=False))
+#print(tabulate(top_10_ratings_alltime, headers='keys', tablefmt='fancy_grid', showindex=False))
+#print(tabulate(bottom_10_ratings_alltime, headers='keys', tablefmt='fancy_grid', showindex=False))
+#print(tabulate(last_top_10_ratings, headers='keys', tablefmt='fancy_grid', showindex=False))
 
 '''
 #print(tabulate(df, headers='keys', tablefmt='grid'))
