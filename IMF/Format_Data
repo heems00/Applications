@@ -1,0 +1,41 @@
+#!python3
+#imfFormatData.py
+#To include at some point in the function (after loading, but before converting data), is a reference to a manip. function.
+
+#Modules
+import openpyxl
+import pandas as pd
+from tabulate import tabulate
+
+#Set values
+excel_file = 'IM Films.xlsx'
+excel_sheet = 'IM Film Rankings'
+
+#Function - Pull and Print Data From Select Columns.  Store in a list/dictionary.
+workbook = openpyxl.load_workbook(excel_file, data_only=True)
+worksheet = workbook[excel_sheet]
+
+full_movie_ratings = [] #would list make row easier to convert into table?
+
+for row in range(4, worksheet.max_row + 1):
+    title = worksheet['B' + str(row)].value
+    release_date = worksheet['C' + str(row)].value
+    imf_rating_avg = worksheet['M' + str(row)].value
+    imf_rating_avg_adj = worksheet['N' + str(row)].value
+    
+    try:
+        if imf_rating_avg is not None:
+            imf_rating_avg = round(float(imf_rating_avg), 2)
+        if imf_rating_avg_adj is not None:
+            imf_rating_avg_adj = round(float(imf_rating_avg_adj), 2)
+        if title and release_date and imf_rating_avg and imf_rating_avg_adj is not None:
+            movie_data.append({'Title Name': title, 'Release Date': release_date, 'IMF Avg. Rating': imf_rating_avg, 'IMF Adj. Rating': imf_rating_avg_adj})
+        else:
+            print(f"Skipping row {row}: Missing or invalid data.")
+            break
+    except Exception as e:
+        print(f"Skipping row{row}: Error converting ratings to float - {e}")
+        continue
+        
+df = pd.DataFrame(full_movie_ratings)
+print(tabulate(df, headers='keys', tablefmt='grid'))
