@@ -11,7 +11,7 @@ from tabulate import tabulate
 excel_file = 'IM Films.xlsx'
 excel_sheet = 'IM Film Rankings'
 
-#Function - Pull and Print Data From Select Columns.  Store in a list/dictionary.
+#Function - Extract Select Columns For All Movies, Convert To Data Frame
 workbook = openpyxl.load_workbook(excel_file, data_only=True)
 worksheet = workbook[excel_sheet]
 
@@ -29,7 +29,7 @@ for row in range(4, worksheet.max_row + 1):
         if imf_rating_avg_adj is not None:
             imf_rating_avg_adj = round(float(imf_rating_avg_adj), 2)
         if title and release_date and imf_rating_avg and imf_rating_avg_adj is not None:
-            movie_data.append({'Title Name': title, 'Release Date': release_date, 'IMF Avg. Rating': imf_rating_avg, 'IMF Adj. Rating': imf_rating_avg_adj})
+            full_movie_ratings.append({'Title Name': title, 'Release Date': release_date, 'IMF Avg. Rating': imf_rating_avg, 'IMF Adj. Rating': imf_rating_avg_adj})
         else:
             print(f"Skipping row {row}: Missing or invalid data.")
             break
@@ -38,4 +38,41 @@ for row in range(4, worksheet.max_row + 1):
         continue
         
 df = pd.DataFrame(full_movie_ratings)
-print(tabulate(df, headers='keys', tablefmt='grid'))
+
+#Functions - Extract Subset of Movies Based On Conditions, Create Seperate DataFrames
+def get_top_10_ratings_alltime(dataframe):
+    return dataframe.nlargest(10, 'IMF Avg. Rating')
+
+def get_bottom_10_ratings_alltime(dataframe):
+    return dataframe.nsmallest(10, 'IMF Avg. Rating')
+
+def get_last_top_10_ratings(dataframe):
+    last_10_rows = dataframe.tail(10)
+    return last_10_rows.sort_values(by='IMF Avg. Rating', ascending=True)
+
+
+top_10_ratings_alltime = get_top_10_ratings_alltime(df)
+bottom_10_ratings_alltime = get_bottom_10_ratings_alltime(df)
+last_top_10_ratings = get_last_top_10_ratings(df)
+
+
+#Print Tables
+print("Fancy Grid Format:")
+print(tabulate(df, headers='keys', tablefmt='fancy_grid', showindex=False))
+print(tabulate(top_10_ratings_alltime, headers='keys', tablefmt='fancy_grid', showindex=False))
+print(tabulate(bottom_10_ratings_alltime, headers='keys', tablefmt='fancy_grid', showindex=False))
+print(tabulate(last_top_10_ratings, headers='keys', tablefmt='fancy_grid', showindex=False))
+
+'''
+#print(tabulate(df, headers='keys', tablefmt='grid'))
+#print("\nGitHub Markdown Format:")
+#print(tabulate(df, headers='keys', tablefmt='github'))
+
+#print("\nHTML Table Format:")
+#html_table = tabulate(df, headers='keys', tablefmt='html')
+#print(html_table)
+
+#print("\nLaTeX Table Format:")
+#latex_table = tabulate(df, headers='keys', tablefmt='latex')
+#print(latex_table)
+'''
